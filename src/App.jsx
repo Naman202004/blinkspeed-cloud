@@ -20,6 +20,8 @@ import EventsHistory from './pages/Analytics/EventsHistory/Index'
 import ResourceUsage from './pages/Analytics/ResourceUsage/Index'
 import PluginHistory from './pages/Analytics/PluginHistory/Index'
 import AdminPricingPlans from './pages/AdminPricingPlans/Index.jsx'
+import Checkout from './pages/Checkout/Index.jsx'
+import CheckoutSuccess from './pages/Checkout/Success.jsx'
 
 function App() {
   return (
@@ -51,6 +53,8 @@ function App() {
       <Route path="/verification" element={<Verification />} />
 
       <Route element={<RequireAuth />}>
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/checkout/success" element={<CheckoutSuccess />} />
         <Route element={<MainLayout />}>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />

@@ -84,25 +84,34 @@ export function SitesProvider({ children }) {
   )
 
   const addSite = useCallback((payload) => {
-    const id =
-      typeof crypto !== 'undefined' && crypto.randomUUID
-        ? crypto.randomUUID()
-        : `site-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
     const url = payload.url.trim()
-    const hostLabel = hostLabelFromUrl(url)
-    const site = {
-      id,
-      url,
-      hostLabel,
-      name: payload.name.trim(),
-      platform: payload.platform,
-      planId: payload.planId,
-      yearly: !!payload.yearly,
-      createdAt: new Date().toISOString(),
-    }
-    setSites((prev) => [...prev, site])
-    setCurrentSiteId(id)
-    return site
+    let selectId = null
+    setSites((prev) => {
+      const existing = prev.find((s) => s.url === url)
+      if (existing) {
+        selectId = existing.id
+        return prev
+      }
+      const id =
+        typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `site-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+      const hostLabel = hostLabelFromUrl(url)
+      const site = {
+        id,
+        url,
+        hostLabel,
+        name: payload.name.trim(),
+        platform: payload.platform,
+        planId: payload.planId,
+        yearly: !!payload.yearly,
+        createdAt: new Date().toISOString(),
+      }
+      selectId = id
+      return [...prev, site]
+    })
+    if (selectId) setCurrentSiteId(selectId)
+    return selectId ? { id: selectId } : null
   }, [])
 
   const setCurrentSite = useCallback((id) => {

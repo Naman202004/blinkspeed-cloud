@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Info, ChevronDown, Leaf, CheckCircle2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext.jsx'
 import { useSites } from '../../context/SitesContext.jsx'
-import { api } from '../../lib/api.js'
+import { api, formatApiError } from '../../lib/api.js'
+
+const STRIPE_MODE = import.meta.env.VITE_STRIPE_MODE === 'live' ? 'live' : 'test'
 
 const DEFAULT_PLANS = [
   {
@@ -58,6 +61,7 @@ function defaultSiteNameFromUrl(u) {
 
 export default function AddWebsite() {
   const navigate = useNavigate()
+  const { session } = useAuth()
   const { addSite } = useSites()
   const [siteUrl, setSiteUrl] = useState('')
   const [siteName, setSiteName] = useState('')
@@ -67,6 +71,7 @@ export default function AddWebsite() {
   const [planId, setPlanId] = useState('free')
   const [submitting, setSubmitting] = useState(false)
   const [plans, setPlans] = useState(DEFAULT_PLANS)
+  const [showAllPlans, setShowAllPlans] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -76,9 +81,19 @@ export default function AddWebsite() {
         const data = await res.json().catch(() => ({}))
         if (!res.ok) return
         if (!cancelled && Array.isArray(data.plans) && data.plans.length) {
-          setPlans(data.plans)
-          if (!data.plans.some((p) => p?.id === planId) && data.plans[0]?.id) {
-            setPlanId(data.plans[0].id)
+          // De-dupe by id (prevents duplicated cards if the backend returns duplicates)
+          const seen = new Set()
+          const unique = []
+          for (const p of data.plans) {
+            const id = typeof p?.id === 'string' ? p.id : ''
+            if (!id || seen.has(id)) continue
+            seen.add(id)
+            unique.push(p)
+          }
+
+          setPlans(unique)
+          if (!unique.some((p) => p?.id === planId) && unique[0]?.id) {
+            setPlanId(unique[0].id)
           }
         }
       } catch {
@@ -113,6 +128,45 @@ export default function AddWebsite() {
   async function handleSubmit(e) {
     e.preventDefault()
     if (!parsedUrl || !siteName.trim()) return
+
+    const selectedPlan = plans.find((p) => p.id === planId)
+    if (planId !== 'free' && selectedPlan) {
+      if (!session?.token) {
+        navigate('/login', { replace: false })
+        return
+      }
+
+      setSubmitting(true)
+      try {
+        const res = await api('/api/stripe/checkout-session', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${session.token}` },
+          body: JSON.stringify({
+            mode: STRIPE_MODE,
+            // Default to INR; backend supports 'usd' too, but user requested no custom UI.
+            currency: 'inr',
+            planId,
+            yearly,
+            appUrl: window.location.origin,
+            siteUrl: parsedUrl.href,
+            siteName: siteName.trim(),
+            sitePlatform,
+          }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(formatApiError(data))
+        if (!data.url) throw new Error('No checkout URL returned')
+        window.location.assign(data.url)
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Checkout failed'
+        // Minimal UX: send user back to dashboard with the site not created yet.
+        alert(msg)
+      } finally {
+        setSubmitting(false)
+      }
+      return
+    }
+
     setSubmitting(true)
     try {
       addSite({
@@ -129,6 +183,8 @@ export default function AddWebsite() {
   }
 
   const showDetails = urlValid
+  const visiblePlans = showAllPlans ? plans : plans.slice(0, 2)
+  const hasMorePlans = plans.length > 2
 
   return (
     <div className="min-h-[calc(100vh-64px)] px-6 py-10 flex flex-col items-center">
@@ -270,9 +326,18 @@ export default function AddWebsite() {
             </div>
 
             <div className="space-y-3">
-              {plans.map((plan) => {
-                const showStrike = yearly && plan.id === 'starter'
-                const display = yearly ? plan.yearlyPricePerMonth : plan.monthlyPrice
+              {visiblePlans.map((plan) => {
+                const monthly = Number(plan.monthlyPrice)
+                const yearlyPerMonth = Number(plan.yearlyPricePerMonth)
+                const yearlyTotal = yearlyPerMonth * 12
+                // When Yearly is selected, show the monthly price as the "cut" price (like the design),
+                // and show yearly-per-month as the main price.
+                const showStrike =
+                  yearly &&
+                  Number.isFinite(monthly) &&
+                  Number.isFinite(yearlyPerMonth) &&
+                  monthly > 0 &&
+                  yearlyPerMonth > 0
                 return (
                   <label
                     key={plan.id}
@@ -293,7 +358,7 @@ export default function AddWebsite() {
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-baseline gap-2">
                         <span className="font-semibold text-gray-900">{plan.name}</span>
-                        {plan.monthlyPrice === 0 ? (
+                        {monthly === 0 ? (
                           <span className="text-gray-900">
                             $0<span className="text-gray-500 font-normal"> /mo</span>
                           </span>
@@ -301,13 +366,29 @@ export default function AddWebsite() {
                           <>
                             {showStrike && (
                               <span className="text-gray-400 line-through text-sm">
-                                ${plan.monthlyPrice.toFixed(2)} /mo
+                                ${monthly.toFixed(2)} /mo
                               </span>
                             )}
-                            <span className="text-gray-900">
-                              ${display.toFixed(2)}
-                              <span className="text-gray-500 font-normal"> /mo</span>
-                            </span>
+                            {yearly ? (
+                              <>
+                                <span className="text-gray-900">
+                                  $
+                                  {Number.isFinite(yearlyTotal)
+                                    ? yearlyTotal.toFixed(2)
+                                    : '0.00'}
+                                  <span className="text-gray-500 font-normal"> /yr</span>
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  ${Number.isFinite(yearlyPerMonth) ? yearlyPerMonth.toFixed(2) : '0.00'} /mo billed
+                                  annually
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-gray-900">
+                                ${Number.isFinite(monthly) ? monthly.toFixed(2) : '0.00'}
+                                <span className="text-gray-500 font-normal"> /mo</span>
+                              </span>
+                            )}
                           </>
                         )}
                       </div>
@@ -319,13 +400,19 @@ export default function AddWebsite() {
               })}
             </div>
 
-            <button
-              type="button"
-              className="mt-4 flex items-center gap-1 text-sm text-purple-600 font-medium hover:text-purple-700"
-            >
-              View more plans
-              <ChevronDown size={16} />
-            </button>
+            {hasMorePlans ? (
+              <button
+                type="button"
+                onClick={() => setShowAllPlans((v) => !v)}
+                className="mt-4 flex items-center gap-1 text-sm text-purple-600 font-medium hover:text-purple-700"
+              >
+                {showAllPlans ? 'Show fewer plans' : 'View more plans'}
+                <ChevronDown
+                  size={16}
+                  className={`transition-transform ${showAllPlans ? 'rotate-180' : ''}`}
+                />
+              </button>
+            ) : null}
           </div>
 
           <button
