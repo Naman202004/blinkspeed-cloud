@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+	box-sizing: border-box;
+	padding: 0;
+	margin: 0;
+}
+
+html {
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+body {
+	line-height: normal;
+	margin: 0;
+	padding: 0;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	font-family: "Poppins", sans-serif !important;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	font-family: "Sora", sans-serif !important;
+	color: #000;
+}
+
+.sora-font {
+	font-family: "Sora", sans-serif !important;
+}
+
+.poppins-font {
+	font-family: "Poppins", sans-serif !important;
+}
+
+button, p, a, span, div, li {
+	font-family: "Poppins", sans-serif !important;
+}
