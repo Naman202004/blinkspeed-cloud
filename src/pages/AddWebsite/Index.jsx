@@ -62,7 +62,7 @@ function defaultSiteNameFromUrl(u) {
 export default function AddWebsite() {
   const navigate = useNavigate()
   const { session } = useAuth()
-  const { addSite } = useSites()
+  const { sites, addSite } = useSites()
   const [siteUrl, setSiteUrl] = useState('')
   const [siteName, setSiteName] = useState('')
   const [siteNameManual, setSiteNameManual] = useState(false)
@@ -107,6 +107,7 @@ export default function AddWebsite() {
 
   const parsedUrl = tryParseUrl(siteUrl)
   const urlValid = !!parsedUrl
+  const urlAlreadyAdded = urlValid && sites.some((s) => s.url === parsedUrl.href)
 
   function onSiteUrlChange(value) {
     setSiteUrl(value)
@@ -128,6 +129,7 @@ export default function AddWebsite() {
   async function handleSubmit(e) {
     e.preventDefault()
     if (!parsedUrl || !siteName.trim()) return
+    if (urlAlreadyAdded) return
 
     const selectedPlan = plans.find((p) => p.id === planId)
     if (planId !== 'free' && selectedPlan) {
@@ -210,7 +212,7 @@ export default function AddWebsite() {
                   onChange={(e) => onSiteUrlChange(e.target.value)}
                   placeholder="Please type in your website URL"
                   className={`w-full px-4 py-2.5 pr-11 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                    siteUrl && !urlValid
+                    siteUrl && (!urlValid || urlAlreadyAdded)
                       ? 'border-amber-400'
                       : 'border-gray-300'
                   }`}
@@ -227,6 +229,10 @@ export default function AddWebsite() {
               </div>
               {siteUrl && !urlValid ? (
                 <p className="mt-1.5 text-xs text-amber-700">Enter a valid URL (e.g. https://example.com)</p>
+              ) : siteUrl && urlAlreadyAdded ? (
+                <p className="mt-1.5 text-xs text-amber-700">
+                  The site URL has already been added to your account.
+                </p>
               ) : null}
             </div>
 
@@ -417,7 +423,7 @@ export default function AddWebsite() {
 
           <button
             type="submit"
-            disabled={submitting || !urlValid || !siteName.trim()}
+            disabled={submitting || !urlValid || !siteName.trim() || urlAlreadyAdded}
             className="w-full py-3 rounded-lg bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {submitting ? 'Adding…' : 'Add'}
