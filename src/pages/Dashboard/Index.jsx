@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'
 import {
   Target,
   Database,
@@ -9,6 +10,7 @@ import {
   MessageCircle,
 } from 'lucide-react';
 import Modal from '../../components/Common/Modal';
+import { getEffectivePlanId, useSites } from '../../context/SitesContext.jsx';
 import {
   LineChart,
   Line,
@@ -24,6 +26,13 @@ const Index = () => {
   const [cacheWarmup, setCacheWarmup] = useState(false);
   const [testMode, setTestMode] = useState(false);
   const [showPurgeModal, setShowPurgeModal] = useState(false);
+  const navigate = useNavigate()
+  const { currentSite } = useSites()
+  const effectivePlan = getEffectivePlanId(currentSite)
+  const subscriptionHeading =
+    effectivePlan === 'free'
+      ? 'Free subscription'
+      : `${effectivePlan.charAt(0).toUpperCase()}${effectivePlan.slice(1)} subscription`
 
   const graphData = [
     { date: 'Dec 11', pageviews: 0, bandwidth: 0 },
@@ -240,7 +249,7 @@ const Index = () => {
           {/* Free Subscription Card */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-medium text-gray-900">Free subscription</h2>
+              <h2 className="text-base font-medium text-gray-900">{subscriptionHeading}</h2>
               <span className="text-sm text-gray-500">2 websites</span>
             </div>
             
@@ -299,7 +308,11 @@ const Index = () => {
               </div>
 
               {/* Upgrade Button */}
-              <button className="w-full bg-purple-600 text-white rounded-md py-2.5 text-sm font-medium hover:bg-purple-700 transition-colors mt-5">
+              <button
+                type="button"
+                onClick={() => navigate('/pricing')}
+                className="w-full bg-purple-600 text-white rounded-md py-2.5 text-sm font-medium hover:bg-purple-700 transition-colors mt-5"
+              >
                 Upgrade subscription
               </button>
             </div>

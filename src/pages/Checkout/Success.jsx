@@ -46,6 +46,12 @@ export default function CheckoutSuccess() {
           platform: data.sitePlatform,
           planId: data.planId,
           yearly: !!data.yearly,
+          subscriptionId: data.subscriptionId ?? null,
+          // Fallback expiry (client-side) if backend doesn't provide it:
+          // monthly: +30 days, yearly: +365 days
+          expiresAt: new Date(
+            Date.now() + (data.yearly ? 365 : 30) * 24 * 60 * 60 * 1000,
+          ).toISOString(),
         })
         sessionStorage.setItem(doneKey, '1')
         navigate('/dashboard', { replace: true })

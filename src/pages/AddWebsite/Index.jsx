@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Info, ChevronDown, Leaf, CheckCircle2 } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { useSites } from '../../context/SitesContext.jsx'
 import { api, formatApiError } from '../../lib/api.js'
@@ -60,6 +60,7 @@ function defaultSiteNameFromUrl(u) {
 }
 
 export default function AddWebsite() {
+  const location = useLocation()
   const navigate = useNavigate()
   const { session } = useAuth()
   const { sites, addSite } = useSites()
@@ -68,10 +69,14 @@ export default function AddWebsite() {
   const [siteNameManual, setSiteNameManual] = useState(false)
   const [sitePlatform, setSitePlatform] = useState('other')
   const [yearly, setYearly] = useState(true)
-  const [planId, setPlanId] = useState('free')
+  const [planId, setPlanId] = useState(
+    typeof location?.state?.preselectPlanId === 'string' && location.state.preselectPlanId.trim()
+      ? location.state.preselectPlanId.trim()
+      : 'free',
+  )
   const [submitting, setSubmitting] = useState(false)
   const [plans, setPlans] = useState(DEFAULT_PLANS)
-  const [showAllPlans, setShowAllPlans] = useState(false)
+  const [showAllPlans, setShowAllPlans] = useState(true)
 
   useEffect(() => {
     let cancelled = false
@@ -184,9 +189,26 @@ export default function AddWebsite() {
     }
   }
 
+  const normalizedPlans = useMemo(() => {
+    // Keep ordering stable: active first (if present), then monthly price, then name.
+    const arr = Array.isArray(plans) ? [...plans] : []
+    arr.sort((a, b) => {
+      const aActive = a?.active === false ? 0 : 1
+      const bActive = b?.active === false ? 0 : 1
+      if (aActive !== bActive) return bActive - aActive
+      const ap = Number(a?.monthlyPrice)
+      const bp = Number(b?.monthlyPrice)
+      const aPrice = Number.isFinite(ap) ? ap : Number.POSITIVE_INFINITY
+      const bPrice = Number.isFinite(bp) ? bp : Number.POSITIVE_INFINITY
+      if (aPrice !== bPrice) return aPrice - bPrice
+      return String(a?.name ?? '').localeCompare(String(b?.name ?? ''))
+    })
+    return arr
+  }, [plans])
+
   const showDetails = urlValid
-  const visiblePlans = showAllPlans ? plans : plans.slice(0, 2)
-  const hasMorePlans = plans.length > 2
+  const visiblePlans = showAllPlans ? normalizedPlans : normalizedPlans.slice(0, 2)
+  const hasMorePlans = normalizedPlans.length > 2
 
   return (
     <div className="min-h-[calc(100vh-64px)] px-6 py-10 flex flex-col items-center">
@@ -304,6 +326,7 @@ export default function AddWebsite() {
             <div className="flex items-center justify-between gap-4 mb-4">
               <button
                 type="button"
+                onClick={() => navigate('/pricing?from=add-website')}
                 className="text-sm text-purple-600 font-medium hover:text-purple-700"
               >
                 Compare features
@@ -399,24 +422,22 @@ export default function AddWebsite() {
                         )}
                       </div>
                       <p className="text-sm text-gray-600 mt-1">{plan.blurb}</p>
-                      <p className="text-xs text-gray-500 mt-2">{plan.note}</p>
+                      <PlanDetails plan={plan} />
                     </div>
                   </label>
                 )
               })}
             </div>
 
-            {hasMorePlans ? (
+            {/* Only show control while some plans are collapsed; hide when all cards are visible */}
+            {hasMorePlans && !showAllPlans ? (
               <button
                 type="button"
-                onClick={() => setShowAllPlans((v) => !v)}
+                onClick={() => setShowAllPlans(true)}
                 className="mt-4 flex items-center gap-1 text-sm text-purple-600 font-medium hover:text-purple-700"
               >
-                {showAllPlans ? 'Show fewer plans' : 'View more plans'}
-                <ChevronDown
-                  size={16}
-                  className={`transition-transform ${showAllPlans ? 'rotate-180' : ''}`}
-                />
+                View more plans
+                <ChevronDown size={16} className="transition-transform" />
               </button>
             ) : null}
           </div>
@@ -438,5 +459,50 @@ export default function AddWebsite() {
         </p>
       </div>
     </div>
+  )
+}
+
+function PlanDetails({ plan }) {
+  // Supports:
+  // - `plan.features` as array of strings (if backend provides)
+  // - `plan.note` as newline-separated bullets (admin-editable textarea)
+  const rawFeatures = Array.isArray(plan?.features) ? plan.features : null
+  const note = String(plan?.note ?? '').trim()
+  const lines = note
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+
+  // Support metadata header in note:
+  // @key:value lines, optional '---' separator, then features.
+  let start = 0
+  for (; start < lines.length; start++) {
+    const line = lines[start]
+    if (line === '---') {
+      start++
+      break
+    }
+    if (!line.startsWith('@')) break
+  }
+
+  const noteLines = lines
+    .slice(start)
+    .map((l) => l.replace(/^\s*[-•]\s*/, '').trim())
+    .filter(Boolean)
+
+  const features = rawFeatures?.length ? rawFeatures : noteLines
+  if (!features?.length) return null
+
+  return (
+    <ul className="mt-2 space-y-1 text-xs text-gray-600">
+      {features.map((f, idx) => (
+        <li key={`${plan?.id ?? 'plan'}-${idx}`} className="flex gap-2">
+          <span className="mt-[2px] inline-flex h-4 w-4 items-center justify-center rounded-full bg-purple-50 text-purple-700 flex-shrink-0">
+            ✓
+          </span>
+          <span className="leading-relaxed">{String(f)}</span>
+        </li>
+      ))}
+    </ul>
   )
 }

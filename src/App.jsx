@@ -22,6 +22,8 @@ import PluginHistory from './pages/Analytics/PluginHistory/Index'
 import AdminPricingPlans from './pages/AdminPricingPlans/Index.jsx'
 import Checkout from './pages/Checkout/Index.jsx'
 import CheckoutSuccess from './pages/Checkout/Success.jsx'
+import UpgradeSubscriptionPage from './pages/UpgradeSubscription/Index.jsx'
+import PricingPage from './pages/Pricing/Index.jsx'
 
 function App() {
   return (
@@ -58,6 +60,8 @@ function App() {
         <Route element={<MainLayout />}>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/upgrade-subscription" element={<UpgradeSubscriptionPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
           <Route path="/add-website" element={<AddWebsite />} />
           <Route path="/cache-insights" element={<CacheInsights />} />
 

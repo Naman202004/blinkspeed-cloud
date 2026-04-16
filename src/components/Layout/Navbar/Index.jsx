@@ -15,7 +15,7 @@ import {
   Search,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext.jsx";
-import { useSites } from "../../../context/SitesContext.jsx";
+import { getEffectivePlanId, useSites } from "../../../context/SitesContext.jsx";
 
 function displayInitials(fullName, email) {
   const n = fullName?.trim();
@@ -144,8 +144,10 @@ export default function Navbar() {
                   </p>
                 ) : (
                   orderedSites.map((site, i) => {
-                    const showTierLabel =
-                      i > 0 && site.planId !== orderedSites[i - 1].planId;
+                    const effId = getEffectivePlanId(site);
+                    const prevEff =
+                      i > 0 ? getEffectivePlanId(orderedSites[i - 1]) : "";
+                    const showTierLabel = i > 0 && effId !== prevEff;
                     const isCurrent = site.id === currentSiteId;
                     const dotClass =
                       DOT_COLORS[
@@ -156,7 +158,7 @@ export default function Navbar() {
                         {showTierLabel ? (
                           <div className="px-3 py-1 pt-2">
                             <span className="text-xs text-gray-400 uppercase">
-                              {planTierLabel(site.planId)}
+                              {planTierLabel(effId)}
                             </span>
                           </div>
                         ) : null}
@@ -285,8 +287,12 @@ export default function Navbar() {
                 <div className="my-2 h-px bg-gray-200" />
                 <div className="space-y-1">
                   <MenuItem icon={<User size={16} />}>Manage account</MenuItem>
-                  <MenuItem icon={<CreditCard size={16} />}>Billing</MenuItem>
-                  <MenuItem icon={<DollarSign size={16} />}>Pricing & features</MenuItem>
+                  <MenuItem icon={<CreditCard size={16} />} onClick={() => navigate("/pricing")}>
+                    Billing
+                  </MenuItem>
+                  <MenuItem icon={<DollarSign size={16} />} onClick={() => navigate("/pricing")}>
+                    Pricing & features
+                  </MenuItem>
                   <MenuItem icon={<Users size={16} />}>Affiliate</MenuItem>
                 </div>
                 <div className="my-2 h-px bg-gray-200" />
@@ -313,11 +319,15 @@ export default function Navbar() {
   );
 }
 
-function MenuItem({ children, icon }) {
+function MenuItem({ children, icon, onClick }) {
   return (
-    <div className="flex items-center gap-2 px-3 py-2 rounded-md text-sm cursor-pointer hover:bg-gray-50 transition-colors">
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-left cursor-pointer hover:bg-gray-50 transition-colors"
+    >
       <span className="text-gray-600">{icon}</span>
       <span className="text-gray-700">{children}</span>
-    </div>
+    </button>
   );
 }

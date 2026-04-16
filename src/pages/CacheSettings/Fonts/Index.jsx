@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom'
 import {
   ToggleLeft,
   ToggleRight,
@@ -8,6 +9,7 @@ import {
 } from 'lucide-react';
 
 const Index = () => {
+  const navigate = useNavigate()
   // Loading strategy states
   const [overrideFontRendering, setOverrideFontRendering] = useState(true);
   const [fontDisplayValue, setFontDisplayValue] = useState('swap');
@@ -167,9 +169,13 @@ const Index = () => {
               <Info size={20} className="text-teal-600 mt-0.5 flex-shrink-0" />
               <p className="text-sm text-gray-700">
                 This feature is available on Plus subscription.{' '}
-                <a href="#" className="text-blue-600 hover:text-blue-700 underline">
+                <button
+                  type="button"
+                  onClick={() => navigate('/pricing')}
+                  className="text-blue-600 hover:text-blue-700 underline"
+                >
                   Upgrade here
-                </a>
+                </button>
               </p>
             </div>
           </div>
@@ -217,9 +223,13 @@ const Index = () => {
               <Info size={20} className="text-teal-600 mt-0.5 flex-shrink-0" />
               <p className="text-sm text-gray-700">
                 This feature is available on Pro subscription.{' '}
-                <a href="#" className="text-blue-600 hover:text-blue-700 underline">
+                <button
+                  type="button"
+                  onClick={() => navigate('/pricing')}
+                  className="text-blue-600 hover:text-blue-700 underline"
+                >
                   Upgrade here
-                </a>
+                </button>
               </p>
             </div>
           </div>
@@ -262,9 +272,13 @@ const Index = () => {
               <Info size={20} className="text-teal-600 mt-0.5 flex-shrink-0" />
               <p className="text-sm text-gray-700">
                 This feature is available on Plus subscription.{' '}
-                <a href="#" className="text-blue-600 hover:text-blue-700 underline">
+                <button
+                  type="button"
+                  onClick={() => navigate('/pricing')}
+                  className="text-blue-600 hover:text-blue-700 underline"
+                >
                   Upgrade here
-                </a>
+                </button>
               </p>
             </div>
           </div>
@@ -304,9 +318,13 @@ const Index = () => {
               <Info size={20} className="text-teal-600 mt-0.5 flex-shrink-0" />
               <p className="text-sm text-gray-700">
                 This feature is available on Starter subscription.{' '}
-                <a href="#" className="text-blue-600 hover:text-blue-700 underline">
+                <button
+                  type="button"
+                  onClick={() => navigate('/pricing')}
+                  className="text-blue-600 hover:text-blue-700 underline"
+                >
                   Upgrade here
-                </a>
+                </button>
               </p>
             </div>
           </div>

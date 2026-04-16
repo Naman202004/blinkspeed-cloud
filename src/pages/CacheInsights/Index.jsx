@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'
 import {
   Info,
   ToggleLeft,
@@ -15,6 +16,7 @@ import {
 import Modal from '../../components/Common/Modal';
 
 const Index = () => {
+  const navigate = useNavigate()
   const [testMode, setTestMode] = useState(false);
   const [showPurgeModal, setShowPurgeModal] = useState(false);
   const [activeTab, setActiveTab] = useState('cache-insights');
@@ -253,9 +255,13 @@ const Index = () => {
                 <ArrowUpRight size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
                 <p className="text-xs text-gray-700">
                   Unlock Advanced Cache warmup via sitemap.{' '}
-                  <a href="#" className="text-blue-600 hover:text-blue-700 underline">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/pricing')}
+                    className="text-blue-600 hover:text-blue-700 underline"
+                  >
                     Upgrade here
-                  </a>
+                  </button>
                 </p>
               </div>
             </div>

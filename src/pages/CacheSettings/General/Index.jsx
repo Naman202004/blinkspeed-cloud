@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'
 import {
   ChevronUp,
   Zap,
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 
 const Index = () => {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('general');
   const [speedInsiders, setSpeedInsiders] = useState(false);
   const [additionalDomains, setAdditionalDomains] = useState(false);
@@ -232,9 +234,13 @@ const Index = () => {
           <Info size={20} className="text-teal-600 mt-0.5 flex-shrink-0" />
           <p className="text-sm text-gray-700">
             This feature is available on Pro subscription.{' '}
-            <a href="#" className="text-blue-600 hover:text-blue-700 underline">
+            <button
+              type="button"
+              onClick={() => navigate('/pricing')}
+              className="text-blue-600 hover:text-blue-700 underline"
+            >
               Upgrade here
-            </a>
+            </button>
           </p>
         </div>
       </div>
@@ -318,9 +324,13 @@ const Index = () => {
           <Info size={20} className="text-teal-600 mt-0.5 flex-shrink-0" />
           <p className="text-sm text-gray-700">
             To remove the badge, upgrade to a paid subscription.{' '}
-            <a href="#" className="text-blue-600 hover:text-blue-700 underline">
+            <button
+              type="button"
+              onClick={() => navigate('/pricing')}
+              className="text-blue-600 hover:text-blue-700 underline"
+            >
               Upgrade here
-            </a>
+            </button>
           </p>
         </div>
       </div>
